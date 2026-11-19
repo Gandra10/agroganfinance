@@ -62,57 +62,75 @@
 <body class="bg-[#F8FAFC] text-slate-900 dark:bg-[#09090B] dark:text-zinc-100 min-h-screen transition-colors duration-200">
 
   <!-- HEADER FIXO -->
-  <header class="sticky top-0 z-30 bg-white/90 dark:bg-[#18181B]/90 backdrop-blur-md border-b border-[#E2E8F0] dark:border-[#27272A]">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex flex-wrap items-center justify-between gap-3">
-      <!-- Logo & Nome (Monocromático Discreto) -->
-      <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-lg bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900 flex items-center justify-center border border-slate-800 dark:border-zinc-200">
-          <i data-lucide="wallet" class="w-4 h-4"></i>
+  <header class="sticky top-0 z-30 bg-white/95 dark:bg-[#18181B]/95 backdrop-blur-md border-b border-[#E2E8F0] dark:border-[#27272A]">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-0 sm:h-16 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-3">
+      <!-- Linha 1 no Mobile: Logo & Nome + Ações Rápidas (No mobile: Tema / Exportar / Limpar) -->
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2.5 sm:gap-3">
+          <div class="w-9 h-9 rounded-lg bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900 flex items-center justify-center border border-slate-800 dark:border-zinc-200 shrink-0">
+            <i data-lucide="wallet" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h1 class="text-base font-semibold tracking-tight text-slate-900 dark:text-zinc-100 leading-tight">
+              Agrogan Finance
+            </h1>
+            <p class="text-xs text-slate-500 dark:text-zinc-400 hidden sm:block">Gestão Inteligente de Patrimônio</p>
+          </div>
         </div>
-        <div>
-          <h1 class="text-base font-semibold tracking-tight text-slate-900 dark:text-zinc-100">
-            Agrogan Finance
-          </h1>
-          <p class="text-xs text-slate-500 dark:text-zinc-400 hidden sm:block">Gestão Inteligente de Patrimônio</p>
+
+        <!-- Botões secundários visíveis no topo direito apenas no mobile -->
+        <div class="flex items-center gap-1.5 sm:hidden">
+          <button onclick="exportToCSV()" title="Exportar CSV"
+            class="p-2 rounded-lg bg-white hover:bg-slate-50 dark:bg-[#18181B] dark:hover:bg-zinc-800/80 text-slate-700 dark:text-zinc-300 border border-[#E2E8F0] dark:border-[#27272A] transition">
+            <i data-lucide="download" class="w-4 h-4 text-slate-500 dark:text-zinc-400"></i>
+          </button>
+          <button onclick="resetDemoData()" title="Limpar Dados"
+            class="p-2 rounded-lg bg-white hover:bg-slate-50 dark:bg-[#18181B] dark:hover:bg-zinc-800/80 text-slate-700 dark:text-zinc-300 border border-[#E2E8F0] dark:border-[#27272A] transition">
+            <i data-lucide="trash-2" class="w-4 h-4 text-slate-500 dark:text-zinc-400"></i>
+          </button>
+          <button onclick="toggleTheme()" aria-label="Alternar tema claro/escuro"
+            class="p-2 rounded-lg bg-white hover:bg-slate-50 dark:bg-[#18181B] dark:hover:bg-zinc-800/80 text-slate-700 dark:text-zinc-300 border border-[#E2E8F0] dark:border-[#27272A] transition">
+            <i data-lucide="sun" class="theme-icon-el w-4 h-4"></i>
+          </button>
         </div>
       </div>
 
-      <!-- Controles Globais -->
-      <div class="flex items-center gap-2 sm:gap-2.5 flex-wrap">
+      <!-- Linha 2 no Mobile / Controles Globais no Desktop -->
+      <div class="flex items-center gap-2 sm:gap-2.5 w-full sm:w-auto">
         <!-- Seletor de Mês/Ano -->
-        <div class="relative flex items-center">
+        <div class="relative flex items-center flex-1 sm:flex-initial min-w-0">
           <i data-lucide="calendar" class="w-4 h-4 text-slate-400 dark:text-zinc-400 absolute left-3 pointer-events-none"></i>
           <select id="periodFilter" aria-label="Filtrar por período"
-            class="pl-9 pr-8 py-2 text-sm font-medium rounded-lg bg-white dark:bg-[#18181B] border border-[#E2E8F0] dark:border-[#27272A] text-slate-800 dark:text-zinc-200 hover:border-slate-300 dark:hover:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-[#4F46E5] transition">
+            class="w-full sm:w-auto pl-9 pr-7 py-2 text-xs sm:text-sm font-medium rounded-lg bg-white dark:bg-[#18181B] border border-[#E2E8F0] dark:border-[#27272A] text-slate-800 dark:text-zinc-200 hover:border-slate-300 dark:hover:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-[#4F46E5] transition truncate">
             <!-- Populado via JS -->
           </select>
         </div>
 
         <!-- Botão Nova Transação (Cor de Destaque Principal: Índigo #4F46E5) -->
         <button id="btnNewTransaction" onclick="openTransactionModal()"
-          class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white bg-[#4F46E5] hover:bg-[#4338CA] active:scale-[0.99] shadow-sm transition">
+          class="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium text-white bg-[#4F46E5] hover:bg-[#4338CA] active:scale-[0.99] shadow-sm transition shrink-0">
           <i data-lucide="plus" class="w-4 h-4"></i>
           <span>Nova Transação</span>
         </button>
 
-        <!-- Botão Exportar CSV -->
+        <!-- Botão Exportar CSV (Desktop/Tablet) -->
         <button id="btnExportCSV" onclick="exportToCSV()" title="Exportar transações filtradas para CSV"
-          class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-white hover:bg-slate-50 dark:bg-[#18181B] dark:hover:bg-zinc-800/80 text-slate-700 dark:text-zinc-300 border border-[#E2E8F0] dark:border-[#27272A] transition">
+          class="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-white hover:bg-slate-50 dark:bg-[#18181B] dark:hover:bg-zinc-800/80 text-slate-700 dark:text-zinc-300 border border-[#E2E8F0] dark:border-[#27272A] transition">
           <i data-lucide="download" class="w-4 h-4 text-slate-500 dark:text-zinc-400"></i>
           <span class="hidden md:inline">Exportar CSV</span>
         </button>
 
-        <!-- Botão Limpar Dados -->
+        <!-- Botão Limpar Dados (Desktop/Tablet) -->
         <button id="btnResetDemo" onclick="resetDemoData()" title="Limpar todas as transações registradas"
-          class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-white hover:bg-slate-50 dark:bg-[#18181B] dark:hover:bg-zinc-800/80 text-slate-700 dark:text-zinc-300 border border-[#E2E8F0] dark:border-[#27272A] transition">
+          class="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-white hover:bg-slate-50 dark:bg-[#18181B] dark:hover:bg-zinc-800/80 text-slate-700 dark:text-zinc-300 border border-[#E2E8F0] dark:border-[#27272A] transition">
           <i data-lucide="trash-2" class="w-4 h-4 text-slate-500 dark:text-zinc-400"></i>
           <span class="hidden lg:inline">Limpar Dados</span>
         </button>
 
-        <!-- Toggle Tema Claro/Escuro -->
+        <!-- Toggle Tema Claro/Escuro (Desktop/Tablet) -->
         <button id="btnThemeToggle" onclick="toggleTheme()" aria-label="Alternar tema claro/escuro"
-          class="p-2 rounded-lg bg-white hover:bg-slate-50 dark:bg-[#18181B] dark:hover:bg-zinc-800/80 text-slate-700 dark:text-zinc-300 border border-[#E2E8F0] dark:border-[#27272A] transition">
-          <i id="themeIcon" data-lucide="sun" class="w-4 h-4"></i>
+          class="hidden sm:inline-flex p-2 rounded-lg bg-white hover:bg-slate-50 dark:bg-[#18181B] dark:hover:bg-zinc-800/80 text-slate-700 dark:text-zinc-300 border border-[#E2E8F0] dark:border-[#27272A] transition">
+          <i id="themeIcon" data-lucide="sun" class="theme-icon-el w-4 h-4"></i>
         </button>
       </div>
     </div>
@@ -352,7 +370,7 @@
         </button>
       </div>
 
-      <form id="transactionForm" onsubmit="handleTransactionSubmit(event)" class="p-6 space-y-4">
+      <form id="transactionForm" onsubmit="handleTransactionSubmit(event)" class="p-5 sm:p-6 space-y-4 max-h-[82vh] overflow-y-auto">
         <input type="hidden" id="txId" />
 
         <!-- Tipo: Receita ou Despesa (Botões Alternáveis) -->
@@ -726,13 +744,13 @@
 
     function applyTheme(theme) {
       const htmlEl = document.documentElement;
-      const iconEl = document.getElementById('themeIcon');
+      const icons = document.querySelectorAll('.theme-icon-el');
       if (theme === 'dark') {
         htmlEl.classList.add('dark');
-        if (iconEl) iconEl.setAttribute('data-lucide', 'sun');
+        icons.forEach(el => el.setAttribute('data-lucide', 'sun'));
       } else {
         htmlEl.classList.remove('dark');
-        if (iconEl) iconEl.setAttribute('data-lucide', 'moon');
+        icons.forEach(el => el.setAttribute('data-lucide', 'moon'));
       }
       localStorage.setItem(STORAGE_KEYS.THEME, theme);
       lucide.createIcons();
