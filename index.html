@@ -390,31 +390,30 @@
           </div>
         </div>
 
-        <!-- Descrição -->
+        <!-- Descrição e Valor (ou Múltiplos Itens) -->
         <div>
-          <label for="txDescription" class="block text-xs font-medium text-slate-500 dark:text-zinc-400 mb-1.5">
-            Descrição *
-          </label>
-          <input type="text" id="txDescription" required placeholder="Ex: Supermercado Pão de Açúcar, Salário Mensal..."
-            class="w-full px-3.5 py-2 text-sm rounded-lg bg-[#F8FAFC] dark:bg-[#09090B] border border-[#E2E8F0] dark:border-[#27272A] text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-[#4F46E5]" />
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="block text-xs font-medium text-slate-500 dark:text-zinc-400">
+              Itens do Lançamento (Descrição e Valor R$) *
+            </label>
+            <button type="button" id="btnAddMoreItemRow" onclick="addTransactionItemRow()"
+              class="inline-flex items-center gap-1 text-xs font-medium text-[#4F46E5] dark:text-indigo-400 hover:underline">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+              <span>Adicionar mais um</span>
+            </button>
+          </div>
+          <div id="txItemsContainer" class="space-y-2">
+            <!-- Linhas de (Descrição + Valor) geradas via JS -->
+          </div>
         </div>
 
-        <!-- Valor e Data -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label for="txAmount" class="block text-xs font-medium text-slate-500 dark:text-zinc-400 mb-1.5">
-              Valor (R$) *
-            </label>
-            <input type="number" id="txAmount" required min="0.01" step="0.01" placeholder="0,00"
-              class="w-full px-3.5 py-2 text-sm rounded-lg bg-[#F8FAFC] dark:bg-[#09090B] border border-[#E2E8F0] dark:border-[#27272A] text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-[#4F46E5]" />
-          </div>
-          <div>
-            <label for="txDate" class="block text-xs font-medium text-slate-500 dark:text-zinc-400 mb-1.5">
-              Data *
-            </label>
-            <input type="date" id="txDate" required
-              class="w-full px-3.5 py-2 text-sm rounded-lg bg-[#F8FAFC] dark:bg-[#09090B] border border-[#E2E8F0] dark:border-[#27272A] text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-[#4F46E5]" />
-          </div>
+        <!-- Data -->
+        <div>
+          <label for="txDate" class="block text-xs font-medium text-slate-500 dark:text-zinc-400 mb-1.5">
+            Data *
+          </label>
+          <input type="date" id="txDate" required
+            class="w-full px-3.5 py-2 text-sm rounded-lg bg-[#F8FAFC] dark:bg-[#09090B] border border-[#E2E8F0] dark:border-[#27272A] text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-[#4F46E5]" />
         </div>
 
         <!-- Categoria e Forma de Pagamento -->
@@ -492,14 +491,18 @@
         </div>
 
         <!-- Botões de Ação -->
-        <div class="flex items-center justify-end gap-3 pt-4 border-t border-[#E2E8F0] dark:border-[#27272A]">
+        <div class="flex flex-wrap items-center justify-end gap-2.5 pt-4 border-t border-[#E2E8F0] dark:border-[#27272A]">
           <button type="button" onclick="closeTransactionModal()"
-            class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
+            class="px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
             Cancelar
           </button>
+          <button type="button" id="btnSaveAndAddAnother" onclick="submitTransactionForm(true)"
+            class="px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium text-slate-700 dark:text-zinc-200 bg-[#F1F5F9] hover:bg-slate-200 dark:bg-[#27272A] dark:hover:bg-zinc-700 border border-[#E2E8F0] dark:border-zinc-700 transition">
+            Salvar e + Outra
+          </button>
           <button type="submit"
-            class="px-5 py-2 rounded-lg text-sm font-medium text-white bg-[#4F46E5] hover:bg-[#4338CA] shadow-sm transition">
-            Salvar Transação
+            class="px-4 py-2 rounded-lg text-xs sm:text-sm font-medium text-white bg-[#4F46E5] hover:bg-[#4338CA] shadow-sm transition">
+            Salvar
           </button>
         </div>
       </form>
@@ -1548,11 +1551,63 @@
       showToast(`Categoria "${selectedId}" removida.`);
     }
 
+    function addTransactionItemRow(description = '', amount = '') {
+      const container = document.getElementById('txItemsContainer');
+      const row = document.createElement('div');
+      row.className = 'tx-item-row flex items-center gap-2';
+      row.innerHTML = `
+        <input type="text" required placeholder="Descrição (ex: Supermercado, Salário...)" value="${escapeHTML(description)}"
+          class="tx-item-desc flex-1 min-w-0 px-3.5 py-2 text-sm rounded-lg bg-[#F8FAFC] dark:bg-[#09090B] border border-[#E2E8F0] dark:border-[#27272A] text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-[#4F46E5]" />
+        <input type="number" required min="0.01" step="0.01" placeholder="R$ 0,00" value="${amount !== '' ? amount : ''}"
+          class="tx-item-amount w-28 sm:w-36 px-3 py-2 text-sm rounded-lg bg-[#F8FAFC] dark:bg-[#09090B] border border-[#E2E8F0] dark:border-[#27272A] text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-[#4F46E5]" />
+        <button type="button" onclick="removeTransactionItemRow(this)" title="Remover este item"
+          class="tx-item-remove p-2 rounded-lg border border-[#E2E8F0] dark:border-[#27272A] bg-[#F8FAFC] dark:bg-[#09090B] text-slate-400 hover:text-[#E11D48] hover:border-rose-500/40 hover:bg-rose-500/10 transition shrink-0">
+          <i data-lucide="trash-2" class="w-4 h-4"></i>
+        </button>
+      `;
+      container.appendChild(row);
+      lucide.createIcons({ nodes: [row] });
+      updateItemRemoveButtonsState();
+      return row;
+    }
+
+    function removeTransactionItemRow(btnEl) {
+      const container = document.getElementById('txItemsContainer');
+      const rows = container.querySelectorAll('.tx-item-row');
+      if (rows.length <= 1) {
+        showToast('É necessário manter pelo menos um item.', 'error');
+        return;
+      }
+      const row = btnEl.closest('.tx-item-row');
+      if (row) row.remove();
+      updateItemRemoveButtonsState();
+    }
+
+    function updateItemRemoveButtonsState() {
+      const container = document.getElementById('txItemsContainer');
+      const rows = container.querySelectorAll('.tx-item-row');
+      rows.forEach(r => {
+        const rmBtn = r.querySelector('.tx-item-remove');
+        if (rmBtn) {
+          if (rows.length <= 1) {
+            rmBtn.classList.add('hidden');
+          } else {
+            rmBtn.classList.remove('hidden');
+          }
+        }
+      });
+    }
+
     function openTransactionModal(editId = null) {
       const modal = document.getElementById('transactionModal');
       const title = document.getElementById('transactionModalTitle');
       const form = document.getElementById('transactionForm');
+      const container = document.getElementById('txItemsContainer');
+      const btnAddMoreRow = document.getElementById('btnAddMoreItemRow');
+      const btnSaveAndAnother = document.getElementById('btnSaveAndAddAnother');
+
       form.reset();
+      container.innerHTML = '';
 
       if (editId) {
         const tx = transactions.find(t => t.id === editId);
@@ -1560,27 +1615,34 @@
         title.textContent = 'Editar Transação';
         document.getElementById('txId').value = tx.id;
         selectTransactionType(tx.type, tx.category);
-        document.getElementById('txDescription').value = tx.description;
-        document.getElementById('txAmount').value = tx.amount;
+        addTransactionItemRow(tx.description, tx.amount);
         document.getElementById('txDate').value = tx.date;
         document.getElementById('txPaymentMethod').value = tx.paymentMethod || 'PIX';
         document.getElementById('txStatus').value = tx.status || 'paid';
         document.getElementById('txRecurring').checked = Boolean(tx.recurring);
+        if (btnAddMoreRow) btnAddMoreRow.classList.add('hidden');
+        if (btnSaveAndAnother) btnSaveAndAnother.classList.add('hidden');
       } else {
         title.textContent = 'Nova Transação';
         document.getElementById('txId').value = '';
         selectTransactionType('expense');
+        addTransactionItemRow('', '');
         const today = new Date();
         const yyyy = today.getFullYear();
         const mm = String(today.getMonth() + 1).padStart(2, '0');
         const dd = String(today.getDate()).padStart(2, '0');
         document.getElementById('txDate').value = `${yyyy}-${mm}-${dd}`;
         document.getElementById('txStatus').value = 'paid';
+        if (btnAddMoreRow) btnAddMoreRow.classList.remove('hidden');
+        if (btnSaveAndAnother) btnSaveAndAnother.classList.remove('hidden');
       }
 
       modal.classList.remove('hidden');
       modal.classList.add('flex');
-      setTimeout(() => document.getElementById('txDescription').focus(), 50);
+      setTimeout(() => {
+        const firstDesc = container.querySelector('.tx-item-desc');
+        if (firstDesc) firstDesc.focus();
+      }, 50);
     }
 
     function closeTransactionModal() {
@@ -1591,45 +1653,91 @@
 
     function handleTransactionSubmit(event) {
       event.preventDefault();
+      submitTransactionForm(false);
+    }
+
+    function submitTransactionForm(keepOpenForAnother = false) {
       const id = document.getElementById('txId').value;
-      const description = document.getElementById('txDescription').value.trim();
-      const amount = parseFloat(document.getElementById('txAmount').value);
       const date = document.getElementById('txDate').value;
       const category = document.getElementById('txCategory').value;
       const paymentMethod = document.getElementById('txPaymentMethod').value;
       const status = document.getElementById('txStatus').value;
       const recurring = document.getElementById('txRecurring').checked;
 
-      if (!description || isNaN(amount) || amount <= 0 || !date) {
+      const rows = Array.from(document.querySelectorAll('#txItemsContainer .tx-item-row'));
+      const validItems = [];
+
+      for (const row of rows) {
+        const descEl = row.querySelector('.tx-item-desc');
+        const amountEl = row.querySelector('.tx-item-amount');
+        const description = (descEl ? descEl.value : '').trim();
+        const amount = parseFloat(amountEl ? amountEl.value : '');
+
+        if (!description || isNaN(amount) || amount <= 0) {
+          showToast('Preencha a descrição e o valor de todos os itens.', 'error');
+          if (!description && descEl) descEl.focus();
+          else if (amountEl) amountEl.focus();
+          return;
+        }
+        validItems.push({ description, amount });
+      }
+
+      if (!date || validItems.length === 0) {
         showToast('Preencha todos os campos obrigatórios corretamente.', 'error');
         return;
       }
 
-      const payload = {
-        id: id || `tx-${Date.now()}`,
-        type: currentTransactionType,
-        description,
-        amount,
-        category,
-        date,
-        paymentMethod,
-        status,
-        recurring
-      };
-
       if (id) {
         const idx = transactions.findIndex(t => t.id === id);
-        if (idx !== -1) transactions[idx] = payload;
+        if (idx !== -1) {
+          transactions[idx] = {
+            id,
+            type: currentTransactionType,
+            description: validItems[0].description,
+            amount: validItems[0].amount,
+            category,
+            date,
+            paymentMethod,
+            status,
+            recurring
+          };
+        }
         showToast('Transação atualizada com sucesso!');
       } else {
-        transactions.unshift(payload);
-        showToast('Nova transação registrada!');
+        const baseNow = Date.now();
+        validItems.reverse().forEach((item, index) => {
+          transactions.unshift({
+            id: `tx-${baseNow}-${index}`,
+            type: currentTransactionType,
+            description: item.description,
+            amount: item.amount,
+            category,
+            date,
+            paymentMethod,
+            status,
+            recurring
+          });
+        });
+
+        const msg = validItems.length > 1
+          ? `${validItems.length} transações registradas!`
+          : 'Nova transação registrada!';
+        showToast(msg);
       }
 
       saveTransactions();
       populatePeriodFilterOptions(false);
-      closeTransactionModal();
       updateDashboard();
+
+      if (keepOpenForAnother && !id) {
+        const container = document.getElementById('txItemsContainer');
+        container.innerHTML = '';
+        const newRow = addTransactionItemRow('', '');
+        const firstDesc = newRow.querySelector('.tx-item-desc');
+        if (firstDesc) firstDesc.focus();
+      } else {
+        closeTransactionModal();
+      }
     }
 
     function deleteTransaction(id) {
