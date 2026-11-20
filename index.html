@@ -113,10 +113,9 @@
         </button>
 
         <!-- Botão Exportar CSV (Desktop/Tablet) -->
-        <button id="btnExportCSV" onclick="exportToCSV()" title="Exportar transações filtradas para CSV"
-          class="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-white hover:bg-slate-50 dark:bg-[#18181B] dark:hover:bg-zinc-800/80 text-slate-700 dark:text-zinc-300 border border-[#E2E8F0] dark:border-[#27272A] transition">
+        <button id="btnExportCSV" onclick="exportToCSV()" title="Exportar transações filtradas para CSV" aria-label="Exportar CSV"
+          class="hidden sm:inline-flex items-center justify-center p-2 rounded-lg bg-white hover:bg-slate-50 dark:bg-[#18181B] dark:hover:bg-zinc-800/80 text-slate-700 dark:text-zinc-300 border border-[#E2E8F0] dark:border-[#27272A] transition">
           <i data-lucide="download" class="w-4 h-4 text-slate-500 dark:text-zinc-400"></i>
-          <span class="hidden md:inline">Exportar CSV</span>
         </button>
 
         <!-- Botão Limpar Dados (Desktop/Tablet) -->
@@ -564,6 +563,35 @@
           <button type="button" onclick="confirmClearAllData()"
             class="px-4 py-2 rounded-lg text-xs sm:text-sm font-medium text-white bg-[#E11D48] hover:bg-rose-700 shadow-sm transition">
             Confirmar e Limpar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE CONFIRMAÇÃO DE EXPORTAÇÃO CSV -->
+  <div id="confirmExportModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-950/60 modal-backdrop">
+    <div class="bg-white dark:bg-[#18181B] w-full max-w-md rounded-xl border border-[#E2E8F0] dark:border-[#27272A] shadow-2xl overflow-hidden">
+      <div class="p-6">
+        <div class="flex items-start gap-4">
+          <div class="w-10 h-10 rounded-lg bg-[#4F46E5]/10 text-[#4F46E5] dark:text-indigo-400 flex items-center justify-center shrink-0">
+            <i data-lucide="download" class="w-5 h-5"></i>
+          </div>
+          <div class="flex-1">
+            <h3 class="text-base font-semibold text-slate-900 dark:text-zinc-100">Exportar relatório CSV?</h3>
+            <p id="confirmExportSummary" class="text-xs text-slate-500 dark:text-zinc-400 mt-1 leading-relaxed">
+              Deseja gerar e baixar a planilha CSV com as transações do filtro atual?
+            </p>
+          </div>
+        </div>
+        <div class="flex items-center justify-end gap-2.5 mt-6 pt-4 border-t border-[#E2E8F0] dark:border-[#27272A]">
+          <button type="button" onclick="closeConfirmExportModal()"
+            class="px-4 py-2 rounded-lg text-xs sm:text-sm font-medium text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
+            Cancelar
+          </button>
+          <button type="button" onclick="confirmExportCSV()"
+            class="px-4 py-2 rounded-lg text-xs sm:text-sm font-medium text-white bg-[#4F46E5] hover:bg-[#4338CA] shadow-sm transition">
+            Confirmar e Exportar
           </button>
         </div>
       </div>
@@ -1752,10 +1780,35 @@
     }
 
     /********************************************************************
-     * 10. EXPORTAÇÃO PARA CSV
+     * 10. EXPORTAÇÃO PARA CSV COM CONFIRMAÇÃO
      ********************************************************************/
     function exportToCSV() {
       const list = getFilteredAndSortedTransactions();
+      if (list.length === 0) {
+        showToast('Não há transações no filtro atual para exportar.', 'error');
+        return;
+      }
+
+      const summaryEl = document.getElementById('confirmExportSummary');
+      if (summaryEl) {
+        summaryEl.textContent = `Deseja exportar ${list.length} ${list.length === 1 ? 'transação filtrada' : 'transações filtradas'} para um arquivo CSV?`;
+      }
+
+      const modal = document.getElementById('confirmExportModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      lucide.createIcons({ nodes: [modal] });
+    }
+
+    function closeConfirmExportModal() {
+      const modal = document.getElementById('confirmExportModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function confirmExportCSV() {
+      const list = getFilteredAndSortedTransactions();
+      closeConfirmExportModal();
       if (list.length === 0) {
         showToast('Não há transações no filtro atual para exportar.', 'error');
         return;
@@ -1816,6 +1869,7 @@
           closeTransactionModal();
           closeBudgetModal();
           closeConfirmClearModal();
+          closeConfirmExportModal();
         }
       });
 
