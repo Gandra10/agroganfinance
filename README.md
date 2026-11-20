@@ -20,6 +20,8 @@ Aplicação web moderna, responsiva e minimalista para gestão e controle financ
 - **JavaScript (ES6+)** (lógica de estado, filtros e manipulação do DOM)
 - **Chart.js** (visualização de dados e gráficos interativos)
 - **Lucide Icons** (iconografia moderna)
+- 
+-  **Leitura Inteligente de Comprovantes (OCR):** Digitalização de recibos e notas fiscais via câmera ou upload com preenchimento automático de valor, data e categoria
 
 ## 🚀 Como Executar o Projeto
 
