@@ -33,6 +33,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <!-- Tesseract.js CDN (OCR Local) -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <!-- Lucide Icons CDN -->
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
@@ -111,6 +113,14 @@
           class="inline-flex items-center justify-center p-2 rounded-lg text-white bg-[#4F46E5] hover:bg-[#4338CA] active:scale-[0.99] shadow-sm transition shrink-0">
           <i data-lucide="plus" class="w-4 h-4"></i>
         </button>
+
+        <!-- Botão Escanear Recibo (OCR Local via Câmera / Galeria) -->
+        <button id="btnScanReceipt" onclick="triggerReceiptFileInput()" title="Escanear Recibo / Comprovante" aria-label="Escanear Recibo"
+          class="inline-flex items-center justify-center gap-1.5 p-2 sm:px-3 sm:py-2 rounded-lg text-xs sm:text-sm font-medium bg-white hover:bg-slate-50 dark:bg-[#18181B] dark:hover:bg-zinc-800/80 text-slate-700 dark:text-zinc-300 border border-[#E2E8F0] dark:border-[#27272A] transition shrink-0">
+          <i data-lucide="camera" class="w-4 h-4 text-slate-500 dark:text-zinc-400"></i>
+          <span class="hidden md:inline">Escanear Recibo</span>
+        </button>
+        <input type="file" id="receiptFileInput" accept="image/*" capture="environment" class="hidden" onchange="handleReceiptImageSelected(event)" />
 
         <!-- Botão Exportar CSV (Desktop/Tablet) -->
         <button id="btnExportCSV" onclick="exportToCSV()" title="Exportar transações filtradas para CSV" aria-label="Exportar CSV"
@@ -369,6 +379,32 @@
 
       <form id="transactionForm" onsubmit="handleTransactionSubmit(event)" class="p-5 sm:p-6 space-y-4 max-h-[82vh] overflow-y-auto">
         <input type="hidden" id="txId" />
+
+        <!-- Área Discreta de Leitura de Comprovante (OCR) -->
+        <div id="ocrModalSection" class="space-y-2">
+          <div class="flex items-center justify-between px-3 py-2 rounded-lg bg-[#F8FAFC] dark:bg-[#09090B] border border-[#E2E8F0] dark:border-[#27272A]">
+            <div class="flex items-center gap-2 text-xs text-slate-600 dark:text-zinc-400">
+              <i data-lucide="camera" class="w-4 h-4 text-slate-400 dark:text-zinc-500 shrink-0"></i>
+              <span>Importar dados de foto ou comprovante</span>
+            </div>
+            <button type="button" onclick="triggerReceiptFileInput()"
+              class="inline-flex items-center gap-1 text-xs font-medium text-[#4F46E5] dark:text-indigo-400 hover:underline shrink-0">
+              <span>Selecionar imagem</span>
+            </button>
+          </div>
+
+          <!-- Indicador de Progresso OCR -->
+          <div id="ocrLoadingBanner" class="hidden items-center gap-2.5 px-3.5 py-2.5 rounded-lg bg-[#4F46E5]/10 border border-[#4F46E5]/20 text-xs font-medium text-[#4F46E5] dark:text-indigo-400">
+            <i data-lucide="loader-2" class="w-4 h-4 animate-spin shrink-0"></i>
+            <span id="ocrLoadingText">Lendo comprovante...</span>
+          </div>
+
+          <!-- Aviso de Revisão pós-OCR -->
+          <div id="ocrReviewBanner" class="hidden items-center gap-2 px-3.5 py-2 rounded-lg bg-[#F1F5F9] dark:bg-[#27272A] border border-[#E2E8F0] dark:border-zinc-700 text-xs text-slate-600 dark:text-zinc-300">
+            <i data-lucide="info" class="w-4 h-4 text-[#4F46E5] dark:text-indigo-400 shrink-0"></i>
+            <span>Dados preenchidos pela leitura da imagem — confira antes de salvar</span>
+          </div>
+        </div>
 
         <!-- Tipo: Receita ou Despesa (Botões Alternáveis) -->
         <div>
@@ -1626,6 +1662,206 @@
       });
     }
 
+    function hideOcrBanners() {
+      const loadingBanner = document.getElementById('ocrLoadingBanner');
+      const reviewBanner = document.getElementById('ocrReviewBanner');
+      if (loadingBanner) {
+        loadingBanner.classList.add('hidden');
+        loadingBanner.classList.remove('flex');
+      }
+      if (reviewBanner) {
+        reviewBanner.classList.add('hidden');
+        reviewBanner.classList.remove('flex');
+      }
+    }
+
+    function triggerReceiptFileInput() {
+      const fileInput = document.getElementById('receiptFileInput');
+      if (fileInput) {
+        fileInput.value = '';
+        fileInput.click();
+      }
+    }
+
+    async function handleReceiptImageSelected(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+
+      const modal = document.getElementById('transactionModal');
+      if (modal.classList.contains('hidden')) {
+        openTransactionModal();
+      } else {
+        hideOcrBanners();
+      }
+
+      const loadingBanner = document.getElementById('ocrLoadingBanner');
+      const loadingText = document.getElementById('ocrLoadingText');
+      const reviewBanner = document.getElementById('ocrReviewBanner');
+
+      if (loadingBanner) {
+        loadingBanner.classList.remove('hidden');
+        loadingBanner.classList.add('flex');
+        if (loadingText) loadingText.textContent = 'Lendo comprovante...';
+      }
+
+      try {
+        if (typeof Tesseract === 'undefined') {
+          throw new Error('Biblioteca OCR não carregada.');
+        }
+
+        const result = await Tesseract.recognize(file, 'por', {
+          logger: (m) => {
+            if (m && m.status === 'recognizing text' && typeof m.progress === 'number' && loadingText) {
+              const pct = Math.round(m.progress * 100);
+              loadingText.textContent = `Lendo comprovante... (${pct}%)`;
+            }
+          }
+        });
+
+        const rawText = (result && result.data && result.data.text) ? result.data.text : '';
+        populateFormFromOcrText(rawText);
+
+        if (loadingBanner) {
+          loadingBanner.classList.add('hidden');
+          loadingBanner.classList.remove('flex');
+        }
+        if (reviewBanner) {
+          reviewBanner.classList.remove('hidden');
+          reviewBanner.classList.add('flex');
+        }
+      } catch (err) {
+        if (loadingBanner) {
+          loadingBanner.classList.add('hidden');
+          loadingBanner.classList.remove('flex');
+        }
+        showToast('Não foi possível ler a imagem do comprovante.', 'error');
+      } finally {
+        event.target.value = '';
+      }
+    }
+
+    function populateFormFromOcrText(rawText) {
+      const text = String(rawText || '');
+      const normalized = text
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase();
+
+      // 1. Tipo padrão: Despesa & Categoria identificada por palavras-chave
+      let detectedCategory = 'Outros';
+      const categoryRules = [
+        { category: 'Alimentação', keywords: ['mercado', 'supermercado', 'padaria', 'restaurante', 'ifood', 'lanche', 'atacadao', 'assai', 'pao de acucar', 'carrefour', 'hortifruti', 'acougue', 'cafeteria', 'pizzaria', 'burger'] },
+        { category: 'Transporte',  keywords: ['posto', 'combustivel', 'gasolina', 'etanol', 'diesel', 'uber', '99', '99pop', 'estacionamento', 'pedagio', 'ipiranga', 'shell', 'petrobras'] },
+        { category: 'Saúde',       keywords: ['farmacia', 'drogaria', 'clinica', 'hospital', 'laboratorio', 'exame', 'consulta', 'medica', 'drogasil', 'raia', 'pacheco', 'unimed'] },
+        { category: 'Moradia',     keywords: ['energia', 'agua', 'internet', 'aluguel', 'condominio', 'enel', 'sabesp', 'cemig', 'copel', 'claro', 'vivo', 'tim', 'iptu', 'gas'] },
+        { category: 'Assinaturas', keywords: ['netflix', 'spotify', 'prime', 'amazon', 'icloud', 'google', 'youtube', 'disney', 'hbo', 'chatgpt', 'openai', 'assinatura'] }
+      ];
+
+      for (const rule of categoryRules) {
+        if (rule.keywords.some(kw => normalized.includes(kw))) {
+          if (EXPENSE_CATEGORIES.some(c => c.id === rule.category)) {
+            detectedCategory = rule.category;
+          }
+          break;
+        }
+      }
+
+      if (!EXPENSE_CATEGORIES.some(c => c.id === detectedCategory) && EXPENSE_CATEGORIES.length > 0) {
+        detectedCategory = EXPENSE_CATEGORIES[EXPENSE_CATEGORIES.length - 1].id;
+      }
+
+      selectTransactionType('expense', detectedCategory);
+
+      // 2. Valor: Captura valores em reais (R$ d+[.,]dd ou d+[.,]dd) e usa o maior valor encontrado
+      const amounts = [];
+      const brlExplicitRegex = /R\$\s*(\d{1,3}(?:\.\d{3})*[.,]\d{2}|\d+[.,]\d{2})/gi;
+      let match;
+      while ((match = brlExplicitRegex.exec(text)) !== null) {
+        const val = parseOcrNumber(match[1]);
+        if (val > 0 && val < 1000000) amounts.push(val);
+      }
+
+      if (amounts.length === 0) {
+        const genericMoneyRegex = /\b(\d{1,3}(?:\.\d{3})+[,\.]\d{2}|\d+[,\.]\d{2})\b/g;
+        while ((match = genericMoneyRegex.exec(text)) !== null) {
+          const val = parseOcrNumber(match[1]);
+          if (val > 0 && val < 100000) amounts.push(val);
+        }
+      }
+
+      const maxAmount = amounts.length > 0 ? Math.max(...amounts) : '';
+
+      // 3. Data: DD/MM/AAAA -> YYYY-MM-DD (se não achar, data atual)
+      let detectedDate = '';
+      const dateRegex = /\b(0?[1-9]|[12]\d|3[01])[\/\-](0?[1-9]|1[0-2])[\/\-](20\d{2}|\d{2})\b/;
+      const dateMatch = text.match(dateRegex);
+      if (dateMatch) {
+        const dd = String(dateMatch[1]).padStart(2, '0');
+        const mm = String(dateMatch[2]).padStart(2, '0');
+        let yyyy = String(dateMatch[3]);
+        if (yyyy.length === 2) yyyy = '20' + yyyy;
+        detectedDate = `${yyyy}-${mm}-${dd}`;
+      } else {
+        const today = new Date();
+        detectedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      }
+      document.getElementById('txDate').value = detectedDate;
+
+      // 4. Descrição: Primeira linha legível em destaque do comprovante ou "Comprovante Digitalizado"
+      let detectedDescription = 'Comprovante Digitalizado';
+      const ignoreLineRegex = /^(cnpj|cpf|ie|im|extrato|cupom|documento|auxiliar|nota\s+fiscal|danfe|sat|data|hora|valor|total|sub-?total|comprovante|pagamento|transacao|via\s+cliente|autenticacao)/i;
+      const lines = text
+        .split(/\r?\n/)
+        .map(l => l.replace(/[^a-zA-ZÀ-ÿ0-9\s&\-\.]/g, ' ').replace(/\s+/g, ' ').trim())
+        .filter(l => l.length >= 4);
+
+      for (const line of lines) {
+        const lettersCount = (line.match(/[a-zA-ZÀ-ÿ]/g) || []).length;
+        if (lettersCount >= 4 && !ignoreLineRegex.test(line)) {
+          detectedDescription = line.slice(0, 60);
+          break;
+        }
+      }
+
+      // 5. Forma de Pagamento: PIX, CRÉDITO, DÉBITO ou DINHEIRO
+      const paymentSelect = document.getElementById('txPaymentMethod');
+      if (paymentSelect) {
+        if (/\bpix\b/.test(normalized)) {
+          paymentSelect.value = 'PIX';
+        } else if (/credito|credit/.test(normalized)) {
+          paymentSelect.value = 'Cartão de Crédito';
+        } else if (/debito|debit/.test(normalized)) {
+          paymentSelect.value = 'Cartão de Débito';
+        } else if (/dinheiro|especie/.test(normalized)) {
+          paymentSelect.value = 'Dinheiro';
+        } else if (/boleto/.test(normalized)) {
+          paymentSelect.value = 'Boleto';
+        } else if (/ted|transferencia/.test(normalized)) {
+          paymentSelect.value = 'Transferência / TED';
+        }
+      }
+
+      // Preenche a primeira linha de item (Descrição + Valor)
+      const container = document.getElementById('txItemsContainer');
+      container.innerHTML = '';
+      addTransactionItemRow(
+        detectedDescription,
+        maxAmount !== '' ? Number(maxAmount).toFixed(2) : ''
+      );
+    }
+
+    function parseOcrNumber(raw) {
+      if (!raw) return 0;
+      const cleaned = String(raw).trim();
+      if (cleaned.includes(',') && cleaned.includes('.')) {
+        return parseFloat(cleaned.replace(/\./g, '').replace(',', '.')) || 0;
+      }
+      if (cleaned.includes(',')) {
+        return parseFloat(cleaned.replace(',', '.')) || 0;
+      }
+      return parseFloat(cleaned) || 0;
+    }
+
     function openTransactionModal(editId = null) {
       const modal = document.getElementById('transactionModal');
       const title = document.getElementById('transactionModalTitle');
@@ -1636,6 +1872,7 @@
 
       form.reset();
       container.innerHTML = '';
+      hideOcrBanners();
 
       if (editId) {
         const tx = transactions.find(t => t.id === editId);
