@@ -82,6 +82,10 @@
 
         <!-- Botões secundários visíveis no topo direito apenas no mobile -->
         <div class="flex items-center gap-1.5 sm:hidden">
+          <button onclick="openBackupModal()" title="Backup e Restauração (.json)"
+            class="p-2 rounded-lg bg-white hover:bg-slate-50 dark:bg-[#18181B] dark:hover:bg-zinc-800/80 text-slate-700 dark:text-zinc-300 border border-[#E2E8F0] dark:border-[#27272A] transition">
+            <i data-lucide="database-backup" class="w-4 h-4 text-slate-500 dark:text-zinc-400"></i>
+          </button>
           <button onclick="exportToCSV()" title="Exportar CSV"
             class="p-2 rounded-lg bg-white hover:bg-slate-50 dark:bg-[#18181B] dark:hover:bg-zinc-800/80 text-slate-700 dark:text-zinc-300 border border-[#E2E8F0] dark:border-[#27272A] transition">
             <i data-lucide="download" class="w-4 h-4 text-slate-500 dark:text-zinc-400"></i>
@@ -128,6 +132,13 @@
           class="hidden sm:inline-flex items-center justify-center p-2 rounded-lg bg-white hover:bg-slate-50 dark:bg-[#18181B] dark:hover:bg-zinc-800/80 text-slate-700 dark:text-zinc-300 border border-[#E2E8F0] dark:border-[#27272A] transition">
           <i data-lucide="download" class="w-4 h-4 text-slate-500 dark:text-zinc-400"></i>
         </button>
+
+        <!-- Botão Backup JSON (Desktop/Tablet) -->
+        <button id="btnBackupJSON" onclick="openBackupModal()" title="Backup e Restauração (.json)" aria-label="Backup JSON"
+          class="hidden sm:inline-flex items-center justify-center p-2 rounded-lg bg-white hover:bg-slate-50 dark:bg-[#18181B] dark:hover:bg-zinc-800/80 text-slate-700 dark:text-zinc-300 border border-[#E2E8F0] dark:border-[#27272A] transition">
+          <i data-lucide="database-backup" class="w-4 h-4 text-slate-500 dark:text-zinc-400"></i>
+        </button>
+        <input type="file" id="backupJsonFileInput" accept=".json,application/json" class="hidden" onchange="handleImportBackupJSON(event)" />
 
         <!-- Botão Limpar Dados (Desktop/Tablet) -->
         <button id="btnResetDemo" onclick="resetDemoData()" title="Limpar todos os dados" aria-label="Limpar todos os dados"
@@ -514,7 +525,7 @@
           </div>
         </div>
 
-        <!-- Status e Recorrência -->
+        <!-- Status e Frequência (Único, Fixo Mensal ou Parcelado) -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
           <div>
             <label for="txStatus" class="block text-xs font-medium text-slate-500 dark:text-zinc-400 mb-1.5">
@@ -526,13 +537,45 @@
               <option value="pending">Pendente / Agendado</option>
             </select>
           </div>
-          <div class="flex items-end pb-2">
-            <label class="inline-flex items-center gap-2.5 cursor-pointer select-none">
-              <input type="checkbox" id="txRecurring" class="w-4 h-4 rounded text-[#4F46E5] focus:ring-[#4F46E5] border-slate-300 dark:border-zinc-700" />
-              <span class="text-sm text-slate-700 dark:text-zinc-300 font-medium">Lançamento fixo / recorrente</span>
+          <div>
+            <label for="txRepeatMode" class="block text-xs font-medium text-slate-500 dark:text-zinc-400 mb-1.5">
+              Recorrência / Parcelamento
             </label>
+            <select id="txRepeatMode" onchange="handleRepeatModeChange(this.value)"
+              class="w-full px-3.5 py-2 text-sm rounded-lg bg-[#F8FAFC] dark:bg-[#09090B] border border-[#E2E8F0] dark:border-[#27272A] text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-[#4F46E5]">
+              <option value="single">Lançamento Único</option>
+              <option value="recurring">Fixo / Repetir mensalmente</option>
+              <option value="installment">Parcelar em X vezes</option>
+            </select>
           </div>
         </div>
+
+        <!-- Opções extras quando Fixo Mensal ou Parcelado estiver selecionado -->
+        <div id="txRepeatOptionsBox" class="hidden p-3.5 rounded-lg bg-[#F8FAFC] dark:bg-[#09090B] border border-[#E2E8F0] dark:border-[#27272A] space-y-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
+            <div>
+              <label id="txRepeatCountLabel" for="txRepeatCount" class="block text-xs font-medium text-slate-600 dark:text-zinc-400 mb-1">
+                Número de parcelas (meses)
+              </label>
+              <input type="number" id="txRepeatCount" min="2" max="60" value="10"
+                class="w-full px-3 py-1.5 text-sm rounded-lg bg-white dark:bg-[#18181B] border border-[#E2E8F0] dark:border-[#27272A] text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-[#4F46E5]" />
+            </div>
+            <div id="txInstallmentValueModeBox" class="hidden">
+              <label for="txInstallmentAmountType" class="block text-xs font-medium text-slate-600 dark:text-zinc-400 mb-1">
+                O valor digitado acima é:
+              </label>
+              <select id="txInstallmentAmountType"
+                class="w-full px-3 py-1.5 text-sm rounded-lg bg-white dark:bg-[#18181B] border border-[#E2E8F0] dark:border-[#27272A] text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-[#4F46E5]">
+                <option value="installment">Valor de cada parcela</option>
+                <option value="total">Valor total da compra (dividir)</option>
+              </select>
+            </div>
+          </div>
+          <p id="txRepeatHelperText" class="text-[11px] text-slate-500 dark:text-zinc-400">
+            Serão gerados lançamentos automáticos para os próximos meses.
+          </p>
+        </div>
+        <input type="checkbox" id="txRecurring" class="hidden" />
 
         <!-- Botões de Ação -->
         <div class="flex flex-wrap items-center justify-end gap-2.5 pt-4 border-t border-[#E2E8F0] dark:border-[#27272A]">
@@ -673,6 +716,49 @@
             <span class="text-xs font-semibold text-slate-800 dark:text-zinc-200">Escolher Arquivo</span>
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE BACKUP E RESTAURAÇÃO (.JSON) -->
+  <div id="backupModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-950/60 modal-backdrop">
+    <div class="bg-white dark:bg-[#18181B] w-full max-w-md rounded-xl border border-[#E2E8F0] dark:border-[#27272A] shadow-2xl overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-[#E2E8F0] dark:border-[#27272A]">
+        <div>
+          <h3 class="text-sm font-semibold text-slate-900 dark:text-zinc-100">Backup e Restauração (.json)</h3>
+          <p class="text-xs text-slate-500 dark:text-zinc-400">Salve ou restaure todos os seus dados em qualquer dispositivo</p>
+        </div>
+        <button type="button" onclick="closeBackupModal()" class="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <div class="p-5 space-y-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <button type="button" onclick="exportBackupJSON()"
+            class="flex flex-col items-center justify-center gap-2 p-4 rounded-xl border border-[#E2E8F0] dark:border-[#27272A] bg-[#F8FAFC] dark:bg-[#09090B] hover:border-[#4F46E5] dark:hover:border-indigo-500 hover:bg-[#4F46E5]/5 transition text-center">
+            <div class="w-10 h-10 rounded-lg bg-[#4F46E5]/10 text-[#4F46E5] dark:text-indigo-400 flex items-center justify-center">
+              <i data-lucide="download" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <div class="text-xs font-semibold text-slate-800 dark:text-zinc-200">Exportar Backup</div>
+              <div class="text-[11px] text-slate-400 dark:text-zinc-500 mt-0.5">Baixar arquivo .json</div>
+            </div>
+          </button>
+
+          <button type="button" onclick="triggerImportBackupJSON()"
+            class="flex flex-col items-center justify-center gap-2 p-4 rounded-xl border border-[#E2E8F0] dark:border-[#27272A] bg-[#F8FAFC] dark:bg-[#09090B] hover:border-[#4F46E5] dark:hover:border-indigo-500 hover:bg-[#4F46E5]/5 transition text-center">
+            <div class="w-10 h-10 rounded-lg bg-[#4F46E5]/10 text-[#4F46E5] dark:text-indigo-400 flex items-center justify-center">
+              <i data-lucide="upload" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <div class="text-xs font-semibold text-slate-800 dark:text-zinc-200">Restaurar Backup</div>
+              <div class="text-[11px] text-slate-400 dark:text-zinc-500 mt-0.5">Importar arquivo .json</div>
+            </div>
+          </button>
+        </div>
+        <p class="text-[11px] text-slate-400 dark:text-zinc-500 text-center pt-1">
+          Inclui todas as transações, metas de orçamento e categorias personalizadas.
+        </p>
       </div>
     </div>
   </div>
@@ -1460,9 +1546,11 @@
           ? `<span class="inline-flex items-center text-[11px] font-medium px-2 py-0.5 rounded-md bg-[#F1F5F9] dark:bg-[#27272A] text-slate-500 dark:text-zinc-400 border border-[#E2E8F0] dark:border-zinc-700">Pendente</span>`
           : `<span class="inline-flex items-center text-[11px] font-medium px-2 py-0.5 rounded-md bg-[#F1F5F9] dark:bg-[#27272A] text-slate-600 dark:text-zinc-300">Efetivado</span>`;
 
-        const recurringBadge = tx.recurring
-          ? `<span title="Lançamento recorrente" class="inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded bg-[#F1F5F9] dark:bg-[#27272A] text-slate-500 dark:text-zinc-400">Fixo</span>`
-          : '';
+        const recurringBadge = tx.installmentLabel
+          ? `<span title="Compra parcelada" class="inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded bg-[#4F46E5]/10 text-[#4F46E5] dark:text-indigo-400">Parcela ${escapeHTML(tx.installmentLabel)}</span>`
+          : (tx.recurring
+            ? `<span title="Lançamento recorrente" class="inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded bg-[#F1F5F9] dark:bg-[#27272A] text-slate-500 dark:text-zinc-400">Fixo</span>`
+            : '');
 
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-slate-50/70 dark:hover:bg-zinc-800/30 transition';
@@ -1936,6 +2024,46 @@
       return parseFloat(cleaned) || 0;
     }
 
+    function handleRepeatModeChange(mode) {
+      const box = document.getElementById('txRepeatOptionsBox');
+      const countLabel = document.getElementById('txRepeatCountLabel');
+      const countInput = document.getElementById('txRepeatCount');
+      const installmentValBox = document.getElementById('txInstallmentValueModeBox');
+      const helperText = document.getElementById('txRepeatHelperText');
+      const recurringCheckbox = document.getElementById('txRecurring');
+
+      if (!box) return;
+
+      if (mode === 'single') {
+        box.classList.add('hidden');
+        if (recurringCheckbox) recurringCheckbox.checked = false;
+      } else if (mode === 'recurring') {
+        box.classList.remove('hidden');
+        if (installmentValBox) installmentValBox.classList.add('hidden');
+        if (countLabel) countLabel.textContent = 'Repetir por quantos meses?';
+        if (countInput) countInput.value = '12';
+        if (helperText) helperText.textContent = 'Gera automaticamente o lançamento nos próximos meses com a etiqueta Fixo.';
+        if (recurringCheckbox) recurringCheckbox.checked = true;
+      } else if (mode === 'installment') {
+        box.classList.remove('hidden');
+        if (installmentValBox) installmentValBox.classList.remove('hidden');
+        if (countLabel) countLabel.textContent = 'Parcelar em quantas vezes?';
+        if (countInput) countInput.value = '10';
+        if (helperText) helperText.textContent = 'Gera automaticamente as parcelas futuras com etiqueta (1/X), (2/X) nos meses seguintes.';
+        if (recurringCheckbox) recurringCheckbox.checked = false;
+      }
+    }
+
+    function addMonthsToISODate(isoDate, monthsToAdd) {
+      if (!isoDate || monthsToAdd === 0) return isoDate;
+      const [y, m, d] = isoDate.split('-').map(Number);
+      const targetYear = y + Math.floor((m - 1 + monthsToAdd) / 12);
+      const targetMonthIndex = (m - 1 + monthsToAdd) % 12;
+      const daysInTargetMonth = new Date(targetYear, targetMonthIndex + 1, 0).getDate();
+      const clampedDay = Math.min(d, daysInTargetMonth);
+      return `${targetYear}-${String(targetMonthIndex + 1).padStart(2, '0')}-${String(clampedDay).padStart(2, '0')}`;
+    }
+
     function openTransactionModal(editId = null) {
       const modal = document.getElementById('transactionModal');
       const title = document.getElementById('transactionModalTitle');
@@ -1943,6 +2071,7 @@
       const container = document.getElementById('txItemsContainer');
       const btnAddMoreRow = document.getElementById('btnAddMoreItemRow');
       const btnSaveAndAnother = document.getElementById('btnSaveAndAddAnother');
+      const repeatModeSelect = document.getElementById('txRepeatMode');
 
       form.reset();
       container.innerHTML = '';
@@ -1959,6 +2088,11 @@
         document.getElementById('txPaymentMethod').value = tx.paymentMethod || 'PIX';
         document.getElementById('txStatus').value = tx.status || 'paid';
         document.getElementById('txRecurring').checked = Boolean(tx.recurring);
+        if (repeatModeSelect) {
+          repeatModeSelect.value = tx.recurring ? 'recurring' : 'single';
+          repeatModeSelect.disabled = true;
+        }
+        document.getElementById('txRepeatOptionsBox').classList.add('hidden');
         if (btnAddMoreRow) btnAddMoreRow.classList.add('hidden');
         if (btnSaveAndAnother) btnSaveAndAnother.classList.add('hidden');
       } else {
@@ -1972,6 +2106,11 @@
         const dd = String(today.getDate()).padStart(2, '0');
         document.getElementById('txDate').value = `${yyyy}-${mm}-${dd}`;
         document.getElementById('txStatus').value = 'paid';
+        if (repeatModeSelect) {
+          repeatModeSelect.disabled = false;
+          repeatModeSelect.value = 'single';
+        }
+        handleRepeatModeChange('single');
         if (btnAddMoreRow) btnAddMoreRow.classList.remove('hidden');
         if (btnSaveAndAnother) btnSaveAndAnother.classList.remove('hidden');
       }
@@ -2001,7 +2140,13 @@
       const category = document.getElementById('txCategory').value;
       const paymentMethod = document.getElementById('txPaymentMethod').value;
       const status = document.getElementById('txStatus').value;
-      const recurring = document.getElementById('txRecurring').checked;
+      const repeatModeEl = document.getElementById('txRepeatMode');
+      const repeatMode = repeatModeEl ? repeatModeEl.value : 'single';
+      const repeatCountInput = document.getElementById('txRepeatCount');
+      const rawCount = parseInt(repeatCountInput ? repeatCountInput.value : '1', 10);
+      const totalMonths = (repeatMode !== 'single' && !isNaN(rawCount) && rawCount >= 2) ? Math.min(rawCount, 60) : 1;
+      const installmentAmountTypeEl = document.getElementById('txInstallmentAmountType');
+      const installmentAmountType = installmentAmountTypeEl ? installmentAmountTypeEl.value : 'installment';
 
       const rows = Array.from(document.querySelectorAll('#txItemsContainer .tx-item-row'));
       const validItems = [];
@@ -2030,6 +2175,7 @@
         const idx = transactions.findIndex(t => t.id === id);
         if (idx !== -1) {
           transactions[idx] = {
+            ...transactions[idx],
             id,
             type: currentTransactionType,
             description: validItems[0].description,
@@ -2037,29 +2183,73 @@
             category,
             date,
             paymentMethod,
-            status,
-            recurring
+            status
           };
         }
         showToast('Transação atualizada com sucesso!');
       } else {
         const baseNow = Date.now();
-        validItems.reverse().forEach((item, index) => {
-          transactions.unshift({
-            id: `tx-${baseNow}-${index}`,
-            type: currentTransactionType,
-            description: item.description,
-            amount: item.amount,
-            category,
-            date,
-            paymentMethod,
-            status,
-            recurring
-          });
+        let createdCount = 0;
+
+        validItems.reverse().forEach((item, itemIdx) => {
+          if (repeatMode === 'installment' && totalMonths >= 2) {
+            const perInstallmentAmount = installmentAmountType === 'total'
+              ? Number((item.amount / totalMonths).toFixed(2))
+              : Number(item.amount);
+
+            for (let m = totalMonths - 1; m >= 0; m--) {
+              const installmentNum = m + 1;
+              const txDate = addMonthsToISODate(date, m);
+              const txStatus = m === 0 ? status : 'pending';
+              transactions.unshift({
+                id: `tx-${baseNow}-${itemIdx}-p${installmentNum}`,
+                type: currentTransactionType,
+                description: `${item.description} (${installmentNum}/${totalMonths})`,
+                amount: perInstallmentAmount,
+                category,
+                date: txDate,
+                paymentMethod,
+                status: txStatus,
+                recurring: false,
+                installmentLabel: `${installmentNum}/${totalMonths}`
+              });
+              createdCount++;
+            }
+          } else if (repeatMode === 'recurring' && totalMonths >= 2) {
+            for (let m = totalMonths - 1; m >= 0; m--) {
+              const txDate = addMonthsToISODate(date, m);
+              const txStatus = m === 0 ? status : 'pending';
+              transactions.unshift({
+                id: `tx-${baseNow}-${itemIdx}-r${m + 1}`,
+                type: currentTransactionType,
+                description: item.description,
+                amount: item.amount,
+                category,
+                date: txDate,
+                paymentMethod,
+                status: txStatus,
+                recurring: true
+              });
+              createdCount++;
+            }
+          } else {
+            transactions.unshift({
+              id: `tx-${baseNow}-${itemIdx}`,
+              type: currentTransactionType,
+              description: item.description,
+              amount: item.amount,
+              category,
+              date,
+              paymentMethod,
+              status,
+              recurring: repeatMode === 'recurring'
+            });
+            createdCount++;
+          }
         });
 
-        const msg = validItems.length > 1
-          ? `${validItems.length} transações registradas!`
+        const msg = createdCount > 1
+          ? `${createdCount} lançamentos registrados!`
           : 'Nova transação registrada!';
         showToast(msg);
       }
@@ -2155,6 +2345,104 @@
     }
 
     /********************************************************************
+     * 10.1 BACKUP E RESTAURAÇÃO EM JSON
+     ********************************************************************/
+    function openBackupModal() {
+      const modal = document.getElementById('backupModal');
+      if (!modal) return;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      lucide.createIcons({ nodes: [modal] });
+    }
+
+    function closeBackupModal() {
+      const modal = document.getElementById('backupModal');
+      if (!modal) return;
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function exportBackupJSON() {
+      const payload = {
+        app: 'Agrogan Finance',
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        transactions,
+        budgets,
+        categories: {
+          allExpense: EXPENSE_CATEGORIES,
+          allIncome: INCOME_CATEGORIES
+        }
+      };
+
+      const jsonStr = JSON.stringify(payload, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+
+      const today = new Date().toISOString().slice(0, 10);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `agrogan_finance_backup_${today}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      closeBackupModal();
+      showToast('Backup (.json) exportado com sucesso!');
+    }
+
+    function triggerImportBackupJSON() {
+      const input = document.getElementById('backupJsonFileInput');
+      if (input) {
+        input.value = '';
+        input.click();
+      }
+    }
+
+    function handleImportBackupJSON(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (!data || !Array.isArray(data.transactions)) {
+            throw new Error('Formato de arquivo de backup inválido.');
+          }
+
+          transactions = data.transactions;
+          if (data.budgets && typeof data.budgets === 'object') {
+            budgets = { ...getDefaultBudgets(), ...data.budgets };
+          }
+          if (data.categories) {
+            if (Array.isArray(data.categories.allExpense) && data.categories.allExpense.length > 0) {
+              EXPENSE_CATEGORIES = data.categories.allExpense;
+            }
+            if (Array.isArray(data.categories.allIncome) && data.categories.allIncome.length > 0) {
+              INCOME_CATEGORIES = data.categories.allIncome;
+            }
+            saveCustomCategories();
+          }
+
+          saveTransactions();
+          saveBudgets();
+          populatePeriodFilterOptions(true);
+          populateCategoryFilterDropdown();
+          updateDashboard();
+          closeBackupModal();
+          showToast(`Backup restaurado (${transactions.length} lançamentos)!`);
+        } catch (err) {
+          showToast('Arquivo de backup (.json) inválido ou corrompido.', 'error');
+        } finally {
+          event.target.value = '';
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    /********************************************************************
      * 11. ATUALIZAÇÃO REATIVA GLOBAL & INICIALIZAÇÃO
      ********************************************************************/
     function updateDashboard() {
@@ -2182,6 +2470,7 @@
           closeConfirmClearModal();
           closeConfirmExportModal();
           closeScanOptionsModal();
+          closeBackupModal();
         }
       });
 
