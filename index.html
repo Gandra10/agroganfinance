@@ -120,10 +120,9 @@
         </button>
 
         <!-- Botão Limpar Dados (Desktop/Tablet) -->
-        <button id="btnResetDemo" onclick="resetDemoData()" title="Limpar todas as transações registradas"
-          class="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-white hover:bg-slate-50 dark:bg-[#18181B] dark:hover:bg-zinc-800/80 text-slate-700 dark:text-zinc-300 border border-[#E2E8F0] dark:border-[#27272A] transition">
+        <button id="btnResetDemo" onclick="resetDemoData()" title="Limpar todos os dados" aria-label="Limpar todos os dados"
+          class="hidden sm:inline-flex items-center justify-center p-2 rounded-lg bg-white hover:bg-slate-50 dark:bg-[#18181B] dark:hover:bg-zinc-800/80 text-slate-700 dark:text-zinc-300 border border-[#E2E8F0] dark:border-[#27272A] transition">
           <i data-lucide="trash-2" class="w-4 h-4 text-slate-500 dark:text-zinc-400"></i>
-          <span class="hidden lg:inline">Limpar Dados</span>
         </button>
 
         <!-- Toggle Tema Claro/Escuro (Desktop/Tablet) -->
@@ -539,6 +538,35 @@
     </div>
   </div>
 
+  <!-- MODAL DE CONFIRMAÇÃO DE LIMPEZA DE DADOS -->
+  <div id="confirmClearModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-950/60 modal-backdrop">
+    <div class="bg-white dark:bg-[#18181B] w-full max-w-md rounded-xl border border-[#E2E8F0] dark:border-[#27272A] shadow-2xl overflow-hidden">
+      <div class="p-6">
+        <div class="flex items-start gap-4">
+          <div class="w-10 h-10 rounded-lg bg-rose-500/10 text-[#E11D48] flex items-center justify-center shrink-0">
+            <i data-lucide="trash-2" class="w-5 h-5"></i>
+          </div>
+          <div class="flex-1">
+            <h3 class="text-base font-semibold text-slate-900 dark:text-zinc-100">Limpar todos os dados?</h3>
+            <p class="text-xs text-slate-500 dark:text-zinc-400 mt-1 leading-relaxed">
+              Tem certeza que deseja apagar todas as transações registradas e zerar as metas de orçamento? Esta ação não poderá ser desfeita.
+            </p>
+          </div>
+        </div>
+        <div class="flex items-center justify-end gap-2.5 mt-6 pt-4 border-t border-[#E2E8F0] dark:border-[#27272A]">
+          <button type="button" onclick="closeConfirmClearModal()"
+            class="px-4 py-2 rounded-lg text-xs sm:text-sm font-medium text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
+            Cancelar
+          </button>
+          <button type="button" onclick="confirmClearAllData()"
+            class="px-4 py-2 rounded-lg text-xs sm:text-sm font-medium text-white bg-[#E11D48] hover:bg-rose-700 shadow-sm transition">
+            Confirmar e Limpar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- TOAST NOTIFICATION -->
   <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
@@ -764,11 +792,24 @@
     }
 
     function resetDemoData() {
-      if (!confirm('Deseja apagar todas as transações e zerar as metas de orçamento?')) return;
+      const modal = document.getElementById('confirmClearModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      lucide.createIcons({ nodes: [modal] });
+    }
+
+    function closeConfirmClearModal() {
+      const modal = document.getElementById('confirmClearModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function confirmClearAllData() {
       transactions = [];
       budgets = getDefaultBudgets();
       saveTransactions();
       saveBudgets();
+      closeConfirmClearModal();
       populatePeriodFilterOptions(true);
       updateDashboard();
       showToast('Todos os lançamentos e orçamentos foram zerados.');
@@ -1666,6 +1707,7 @@
         if (e.key === 'Escape') {
           closeTransactionModal();
           closeBudgetModal();
+          closeConfirmClearModal();
         }
       });
 
